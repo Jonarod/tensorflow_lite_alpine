@@ -1,0 +1,118 @@
+FROM golang:alpine
+
+ENV JAVA_HOME /usr/lib/jvm/default-jvm
+
+RUN apk add --no-cache --virtual=.build-deps \
+        bash \
+        cmake \
+        curl \
+        freetype-dev \
+        g++ \
+        gcc \
+        git \
+        libjpeg-turbo-dev \
+        libpng-dev \
+        libstdc++ \
+        linux-headers \
+        make \
+        musl-dev \
+        openblas-dev \
+        openjdk8 \
+        patch \
+        perl \
+        python3 \
+        python3-dev \
+        py-numpy-dev \
+        rsync \
+        sed \
+        swig \
+        zip \
+    && cd /tmp \
+    && pip3 install --no-cache-dir wheel \
+&& $(cd /usr/bin && ln -s python3 python)
+
+# ===================================================
+# Download BAZEL FOR ALPINE
+# ===================================================
+ENV BAZEL_VERSION 0.26.1
+
+# Install latest bazel from https://github.com/davido/bazel-alpine-package
+ADD https://raw.githubusercontent.com/davido/bazel-alpine-package/master/david@ostrovsky.org-5a0369d6.rsa.pub \
+    /etc/apk/keys/david@ostrovsky.org-5a0369d6.rsa.pub
+ADD https://github.com/davido/bazel-alpine-package/releases/download/${BAZEL_VERSION}/bazel-${BAZEL_VERSION}-r0.apk \
+    /tmp/bazel-${BAZEL_VERSION}-r0.apk
+RUN apk add /tmp/bazel-${BAZEL_VERSION}-r0.apk
+
+# ===================================================
+# Download Tensorflow
+# ===================================================
+ENV TENSORFLOW_VERSION 1.14.0
+
+# WORKDIR /tmp
+WORKDIR /go/src/github.com/tensorflow
+RUN git clone https://github.com/tensorflow/tensorflow.git
+
+
+# ===================================================
+# Build Tensorflow Lite
+# ===================================================
+
+WORKDIR /go/src/github.com/tensorflow/tensorflow
+RUN CC_OPT_FLAGS="-march=native" \
+      TF_NEED_JEMALLOC=1 \
+      TF_NEED_GCP=0 \
+      TF_NEED_HDFS=0 \
+      TF_NEED_S3=0 \
+      TF_ENABLE_XLA=0 \
+      TF_NEED_GDR=0 \
+      TF_NEED_VERBS=0 \
+      TF_NEED_OPENCL=0 \
+      TF_NEED_CUDA=0 \
+      TF_NEED_MPI=0 \
+      bash configure
+RUN bazel build -c opt --cxxopt=--std=c++11 //tensorflow/lite/experimental/c:libtensorflowlite_c.so
+
+# FROM scratch
+# COPY --from=0 /tmp/tensorflow/bazel-genfiles/tensorflow/lite/experimental/c/libtensorflowlite_c.so /tensorflow/libtensorflowlite_c.so
+RUN cp /go/src/github.com/tensorflow/tensorflow/bazel-genfiles/tensorflow/lite/experimental/c/libtensorflowlite_c.so /go/src/github.com/tensorflow/tensorflow/tensorflow/lite/experimental/c/libtensorflowlite_c.so
+RUN cp /go/src/github.com/tensorflow/tensorflow/bazel-genfiles/tensorflow/lite/experimental/c/libtensorflowlite_c.so /usr/local/lib/libtensorflowlite_c.so
+RUN cp /go/src/github.com/tensorflow/tensorflow/bazel-genfiles/tensorflow/lite/experimental/c/libtensorflowlite_c.so /home/libtensorflowlite_c.so
+
+RUN go get github.com/mattn/go-tflite
+RUN go get github.com/mattn/go-pointer
+RUN go get github.com/nfnt/resize
+
+WORKDIR /home
+
+# FROM golang:alpine
+# COPY --from=0 /go/src/github.com/tensorflow/tensorflow/tensorflow/bazel-genfiles/tensorflow/lite/experimental/c/libtensorflowlite_c.so /usr/local/lib/libtensorflowlite_c.so
+# RUN apk add --no-cache --virtual build-deps gcc g++ libstdc++
+
+# ===================================================
+# OPTIONAL: Build Tensorflow (core)
+# ===================================================
+# ENV BAZEL_LOCAL_RESOURCES 6144,2,1.0
+
+# RUN cd /tmp/tensorflow \
+#   && : musl-libc does not have "secure_getenv" function \
+#   && sed -i -e '/JEMALLOC_HAVE_SECURE_GETENV/d' third_party/jemalloc.BUILD \
+#   && sed -i -e '/define TF_GENERATE_BACKTRACE/d' tensorflow/core/platform/default/stacktrace.h \
+#   && sed -i -e '/define TF_GENERATE_STACKTRACE/d' tensorflow/core/platform/stacktrace_handler.cc \
+#   &&  CC_OPT_FLAGS="-march=native" \
+#       TF_NEED_JEMALLOC=1 \
+#       TF_NEED_GCP=0 \
+#       TF_NEED_HDFS=0 \
+#       TF_NEED_S3=0 \
+#       TF_ENABLE_XLA=0 \
+#       TF_NEED_GDR=0 \
+#       TF_NEED_VERBS=0 \
+#       TF_NEED_OPENCL=0 \
+#       TF_NEED_CUDA=0 \
+#       TF_NEED_MPI=0 \
+#       bash configure
+# RUN cd /tmp/tensorflow-${TENSORFLOW_VERSION} \
+#     && bazel build -c opt --local_resources ${BAZEL_LOCAL_RESOURCES} //tensorflow:libtensorflow.so
+
+# FROM scratch
+#   COPY --from=0 /tmp/tensorflow/bazel-bin/tensorflow/libtensorflow.so /tensorflow/libtensorflow.so
+#   COPY --from=0 /tmp/tensorflow/bazel-bin/tensorflow/libtensorflow_framework.so /tensorflow/libtensorflow_framework.so
