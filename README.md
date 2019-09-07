@@ -2,11 +2,16 @@ This Docker image brings Tensorflow Lite into a tiny 1.4MB C library ready for A
 It is useful if you want to keep your Docker images small and as portable as possible.
 
 
+<p align="center">
+    <img src="./assets/tflite_compress.svg" width="200" height="200" alt="TensorFlow Lite compressed" />
+</p>
+
+
 # Quick start
 
 #### Get `libtensorflowlite_c.so` precompiled for Alpine
 ```bash
-docker run -it --rm --name libtflite jonarod/tensorflow_alpine_builder
+docker run -it --rm --name libtflite jonarod/tensorflow_lite_alpine
 ```
 then, from another terminal:
 
@@ -25,7 +30,7 @@ Example with Golang:
 
 ```bash
 docker run --rm -it \
-   -v $GOPATH:/go jonarod/tensorflow_alpine_builder:builder \
+   -v $GOPATH:/go jonarod/tensorflow_lite_alpine:builder \
    /bin/sh -c "cd /go/<PATH-TO-YOUR-PROJECT-FROM-YOUR-LOCAL-GOPATH>; \
    go build -ldflags '-w' -o classify ."
 ```
@@ -81,7 +86,7 @@ Directly use the docker image as a base image and import the file located at `/h
 
 ```Dockerfile
 # Import the image and name this first step as "builder" (for example)
-FROM jonarod/tensorflow_alpine_builder as libtflite
+FROM jonarod/tensorflow_lite_alpine as libtflite
 
 # You want to start your image with Alpine (this is the point...)
 FROM alpine
@@ -117,7 +122,7 @@ One could also pull this image, run it, and then use `docker cp` to copy the `li
 This will pull the image if not already, then run it interactively and name the container for easier copy later.
 
 ```bash
-docker run -it --rm --name libtflite jonarod/tensorflow_alpine_builder
+docker run -it --rm --name libtflite jonarod/tensorflow_lite_alpine
 ```
 then, from another terminal, we can: 
 
