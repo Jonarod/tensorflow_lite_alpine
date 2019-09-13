@@ -7,7 +7,7 @@ FROM alpine
 # CC=/usr/local/musl/bin/musl-gcc go build --ldflags '-w' -o classify .
 # or, from jonarod/tensorflow_lite_alpine:
 # docker run --rm -it -v $GOPATH:/go jonarod/tensorflow_lite_alpine:builder /bin/sh -c "cd /go/src/github.com/Jonarod/tf_classifier; go build -ldflags '-w' -o classify ."
-COPY ./classify /home
+COPY ./classify-musl-t4 /home
 
 # Our model: mobilenet v1
 COPY ./mobilenet_quant_v1_224.tflite /home

@@ -1,10 +1,10 @@
-This Docker image brings Tensorflow Lite into a tiny 1.4MB C library ready for Alpine.
-It is useful if you want to keep your Docker images small and as portable as possible.
-
-
 <p align="center">
     <img src="./assets/tflite_compress.svg" width="200" height="200" alt="TensorFlow Lite compressed" />
 </p>
+
+
+This Docker image brings Tensorflow Lite into a tiny 1.4MB C library ready for Alpine.
+It is useful if you want to keep your Docker images small and as portable as possible.
 
 
 # Quick start
